@@ -16,7 +16,10 @@ server {
 
         proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
-        proxy_set_header Host $host;
+        # The upstream MCP server validates the Host header (DNS-rebinding
+        # protection) against its own bind address — not the public Host
+        # the client sent — so it must be overridden here, not passed through.
+        proxy_set_header Host 127.0.0.1:8000;
         proxy_set_header Connection "";
         proxy_buffering off;
         proxy_read_timeout 3600s;
