@@ -1,0 +1,7 @@
+.env
+*.env
+.garminconnect/
+.garminconnect_base64
+__pycache__/
+*.pyc
+.DS_Store

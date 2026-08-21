@@ -1,0 +1,12 @@
+services:
+  garmin-mcp-remote:
+    build: .
+    env_file: .env
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}"
+    volumes:
+      - garmin-tokens:/root/.garminconnect
+    restart: unless-stopped
+
+volumes:
+  garmin-tokens:
