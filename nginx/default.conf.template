@@ -9,8 +9,20 @@ server {
     # Everything else — including the MCP endpoint — requires the bearer token.
     # The upstream garmin-mcp process only listens on 127.0.0.1 inside this
     # container, so it is never reachable except through this check.
+    #
+    # Accepted two ways: "Authorization: Bearer <token>" header (preferred),
+    # or a "?token=<token>" query param — added because some MCP client UIs
+    # (e.g. claude.ai's custom connector dialog) only expose a URL field and
+    # an OAuth client id/secret pair, with no way to set a static header.
     location / {
-        if ($http_authorization != "Bearer ${MCP_BEARER_TOKEN}") {
+        set $auth_ok 0;
+        if ($http_authorization = "Bearer ${MCP_BEARER_TOKEN}") {
+            set $auth_ok 1;
+        }
+        if ($arg_token = "${MCP_BEARER_TOKEN}") {
+            set $auth_ok 1;
+        }
+        if ($auth_ok = 0) {
             return 401;
         }
 
