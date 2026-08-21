@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir "git+https://github.com/Taxuspt/garmin_mcp"
 
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY oauth_shim.py /oauth_shim.py
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

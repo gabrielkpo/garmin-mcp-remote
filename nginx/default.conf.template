@@ -6,14 +6,24 @@ server {
         proxy_pass http://127.0.0.1:8000/healthz;
     }
 
+    # OAuth 2.1 discovery / DCR / authorize / token endpoints, served by the
+    # oauth-shim process. These must see the real public Host (not the
+    # internal upstream address) so they can build correct absolute URLs.
+    location ~ ^/(\.well-known/oauth-protected-resource|\.well-known/oauth-authorization-server|register|authorize|token)$ {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+
     # Everything else — including the MCP endpoint — requires the bearer token.
     # The upstream garmin-mcp process only listens on 127.0.0.1 inside this
     # container, so it is never reachable except through this check.
     #
-    # Accepted two ways: "Authorization: Bearer <token>" header (preferred),
-    # or a "?token=<token>" query param — added because some MCP client UIs
-    # (e.g. claude.ai's custom connector dialog) only expose a URL field and
-    # an OAuth client id/secret pair, with no way to set a static header.
+    # Accepted two ways: "Authorization: Bearer <token>" header (what the
+    # OAuth token endpoint above hands out, and what claude.ai will send
+    # after completing the OAuth flow), or a "?token=<token>" query param
+    # for manual/non-OAuth clients.
     location / {
         set $auth_ok 0;
         if ($http_authorization = "Bearer ${MCP_BEARER_TOKEN}") {
@@ -23,6 +33,7 @@ server {
             set $auth_ok 1;
         }
         if ($auth_ok = 0) {
+            add_header WWW-Authenticate 'Bearer resource_metadata="https://$host/.well-known/oauth-protected-resource"' always;
             return 401;
         }
 
