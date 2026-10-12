@@ -247,6 +247,13 @@ ruff check .
 pytest -q
 ```
 
+## Releases
+
+Versions follow [semantic versioning](https://semver.org). Pull request titles use
+[Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `chore:`),
+and [release-please](https://github.com/googleapis/release-please) opens a release PR
+that updates `CHANGELOG.md` and tags the version when merged.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
