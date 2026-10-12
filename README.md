@@ -1,5 +1,7 @@
 # garmin-mcp-remote
 
+[![CI](https://github.com/gabrielkpo/garmin-mcp-remote/actions/workflows/ci.yml/badge.svg)](https://github.com/gabrielkpo/garmin-mcp-remote/actions/workflows/ci.yml)
+
 A turnkey, **remotely-hostable** deployment of [Taxuspt/garmin_mcp](https://github.com/Taxuspt/garmin_mcp)
 (a Model Context Protocol server for Garmin Connect), packaged as a single
 Docker image with:
@@ -232,6 +234,22 @@ bearer token also works directly:
 - This repo does not store your Garmin password anywhere persistent — it's
   only used transiently for the initial `garmin-mcp-auth` handshake, which
   produces OAuth tokens that are what actually get cached.
+
+## Development
+
+The OAuth shim is covered by unit tests (discovery, dynamic client registration,
+PKCE code flow, single-use codes). CI runs lint, tests and a Docker build on
+every pull request.
+
+```bash
+pip install -r requirements-dev.txt
+ruff check .
+pytest -q
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
 
 ## Credits
 
