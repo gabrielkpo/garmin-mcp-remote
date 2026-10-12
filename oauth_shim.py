@@ -35,7 +35,7 @@ CODE_TTL_SECONDS = 300
 
 # In-memory only -- fine for a single-process, single-user deployment. A
 # restart invalidates any in-flight (not yet completed) authorization
-# attempt, which just means the user retries the "Connecter" click.
+# attempt, which just means the user retries the "Connect" click.
 _pending_codes: dict[str, dict] = {}
 
 
@@ -90,13 +90,13 @@ async def register(request: Request):
 
 _CONSENT_PAGE = """<!doctype html>
 <html><body style="font-family: system-ui; max-width: 32rem; margin: 4rem auto; text-align: center;">
-<h2>Autoriser l'accès à Garmin Connect</h2>
-<p>« {client} » demande à accéder à vos données Garmin via ce serveur MCP.</p>
+<h2>Authorize access to Garmin Connect</h2>
+<p>"{client}" is requesting access to your Garmin data through this MCP server.</p>
 <form method="post" action="/authorize">
   <input type="hidden" name="redirect_uri" value="{redirect_uri}">
   <input type="hidden" name="state" value="{state}">
   <input type="hidden" name="code_challenge" value="{code_challenge}">
-  <button type="submit" style="font-size: 1rem; padding: 0.6rem 1.5rem;">Autoriser</button>
+  <button type="submit" style="font-size: 1rem; padding: 0.6rem 1.5rem;">Authorize</button>
 </form>
 </body></html>"""
 
