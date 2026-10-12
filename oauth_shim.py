@@ -22,6 +22,7 @@ import html
 import os
 import secrets
 import time
+from urllib.parse import urlencode
 
 import uvicorn
 from starlette.applications import Starlette
@@ -131,6 +132,8 @@ async def authorize_post(request: Request):
     redirect_uri = form.get("redirect_uri")
     state = form.get("state", "")
     code_challenge = form.get("code_challenge")
+    if not redirect_uri or not code_challenge:
+        return JSONResponse({"error": "invalid_request"}, status_code=400)
 
     code = secrets.token_urlsafe(32)
     _pending_codes[code] = {
@@ -138,10 +141,11 @@ async def authorize_post(request: Request):
         "exp": time.time() + CODE_TTL_SECONDS,
     }
 
-    sep = "&" if "?" in redirect_uri else "?"
-    location = f"{redirect_uri}{sep}code={code}"
+    params = {"code": code}
     if state:
-        location += f"&state={state}"
+        params["state"] = state
+    sep = "&" if "?" in redirect_uri else "?"
+    location = f"{redirect_uri}{sep}{urlencode(params)}"
     return RedirectResponse(location, status_code=302)
 
 
