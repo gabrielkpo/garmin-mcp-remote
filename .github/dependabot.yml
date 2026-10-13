@@ -10,6 +10,11 @@ updates:
     groups:
       python:
         patterns: ["*"]
+    ignore:
+      # the OAuth shim runs on Starlette and the auth flow is not covered end to end:
+      # its majors are upgraded deliberately
+      - dependency-name: "starlette"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker
     directory: /
     schedule:
