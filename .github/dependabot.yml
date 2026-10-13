@@ -13,8 +13,9 @@ updates:
     ignore:
       # the OAuth shim runs on Starlette and the auth flow is not covered end to end:
       # its majors are upgraded deliberately
+      # (a version range, because update-types is not applied to ">=" requirement bumps)
       - dependency-name: "starlette"
-        update-types: ["version-update:semver-major"]
+        versions: [">=1.0"]
   - package-ecosystem: docker
     directory: /
     schedule:
