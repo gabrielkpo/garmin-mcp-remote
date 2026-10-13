@@ -4,11 +4,28 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Conventional Commits titles, so the PR title check passes; one grouped PR per week
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      python:
+        patterns: ["*"]
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    ignore:
+      # the Python version of the image is upgraded deliberately (runtime + dependencies tested)
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns: ["*"]
