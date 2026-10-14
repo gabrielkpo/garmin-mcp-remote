@@ -11,5 +11,9 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         with:
+          # A PR opened with GITHUB_TOKEN triggers no workflow, so the required checks
+          # would never run on the release PR. RELEASE_PLEASE_TOKEN is a fine-grained
+          # PAT (contents + pull requests: read/write on this repo only).
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
