@@ -16,7 +16,7 @@ fi
 
 export PORT="${PORT:-8080}"
 
-envsubst '${PORT} ${MCP_BEARER_TOKEN}' \
+envsubst '${PORT}' \
     < /etc/nginx/templates/default.conf.template \
     > /etc/nginx/conf.d/default.conf
 
