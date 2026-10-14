@@ -6,8 +6,9 @@ MCP Authorization spec (OAuth 2.1 + PKCE + Dynamic Client Registration) --
 a static Authorization header or query-string token is not enough for it to
 even attempt a connection. This shim exists purely to satisfy that protocol
 in front of the real server, which still gates on the single static
-MCP_BEARER_TOKEN: /token hands that token out as the "access_token", so
-nginx's existing bearer check needs no changes.
+MCP_BEARER_TOKEN: /token hands that token out as the "access_token", and
+nginx checks it on every MCP request through this shim's /_auth endpoint
+(auth_request, constant-time comparison).
 
 Security model: single-user only, and the token is only ever released to a
 caller who proves one of two things:
@@ -35,7 +36,7 @@ from urllib.parse import urlencode
 import uvicorn
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse
+from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from starlette.routing import Route
 
 BEARER_TOKEN = os.environ["MCP_BEARER_TOKEN"]
@@ -46,6 +47,7 @@ MAX_FAILED_CONSENTS = 5
 FAILED_CONSENT_WINDOW_SECONDS = 300
 
 DEFAULT_ALLOWED_REDIRECT_URIS = "https://claude.ai/api/mcp/auth_callback"
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").rstrip("/")
 
 
 def _load_consent_secret() -> str:
@@ -106,8 +108,19 @@ def _refresh_token_is_valid(value: str) -> bool:
 
 
 def _base_url(request: Request) -> str:
+    """PUBLIC_BASE_URL, when set, wins over the client-controlled Host header."""
+    if PUBLIC_BASE_URL:
+        return PUBLIC_BASE_URL
     host = request.headers.get("x-forwarded-host") or request.headers.get("host")
     return f"https://{host}"
+
+
+async def check_bearer(request: Request):
+    """nginx auth_request target: 204 if the Authorization header holds the bearer token."""
+    expected = f"Bearer {BEARER_TOKEN}".encode()
+    presented = request.headers.get("authorization", "").encode()
+    status = 204 if hmac.compare_digest(presented, expected) else 401
+    return Response(status_code=status)
 
 
 async def protected_resource_metadata(request: Request):
@@ -286,6 +299,7 @@ app = Starlette(
         Route("/authorize", authorize_get, methods=["GET"]),
         Route("/authorize", authorize_post, methods=["POST"]),
         Route("/token", token, methods=["POST"]),
+        Route("/_auth", check_bearer, methods=["GET"]),
     ]
 )
 

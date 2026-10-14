@@ -304,3 +304,25 @@ def test_refuses_consent_secret_equal_to_bearer_token():
     result = _import_in_subprocess({"MCP_BEARER_TOKEN": same, "MCP_CONSENT_SECRET": same})
     assert result.returncode != 0
     assert "differ" in result.stderr
+
+
+def test_auth_endpoint_accepts_only_the_exact_bearer(client):
+    assert client.get("/_auth", headers={"Authorization": f"Bearer {BEARER}"}).status_code == 204
+    assert client.get("/_auth", headers={"Authorization": f"Bearer {BEARER}x"}).status_code == 401
+    assert client.get("/_auth", headers={"Authorization": BEARER}).status_code == 401
+    assert client.get("/_auth").status_code == 401
+
+
+def test_public_base_url_overrides_the_host_header(client, monkeypatch):
+    monkeypatch.setattr(oauth_shim, "PUBLIC_BASE_URL", "https://pinned.example.com")
+    meta = client.get(
+        "/.well-known/oauth-authorization-server", headers={"Host": "evil.example.com"}
+    ).json()
+    assert meta["token_endpoint"] == "https://pinned.example.com/token"
+
+
+def test_nginx_config_does_not_embed_the_bearer_token():
+    template = (ROOT / "nginx" / "default.conf.template").read_text()
+    entrypoint = (ROOT / "entrypoint.sh").read_text()
+    assert "MCP_BEARER_TOKEN" not in template
+    assert "MCP_BEARER_TOKEN}'" not in entrypoint.split("envsubst", 1)[1].splitlines()[0]

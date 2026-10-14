@@ -24,15 +24,12 @@ server {
     # OAuth token endpoint above hands out after a successful consent, and what
     # claude.ai sends afterwards). A "?token=" query parameter is deliberately
     # NOT accepted: it would end up in access logs and Referer headers.
+    #
+    # The check is delegated to the oauth-shim (constant-time comparison), so the
+    # token never appears in this file.
     location / {
-        set $auth_ok 0;
-        if ($http_authorization = "Bearer ${MCP_BEARER_TOKEN}") {
-            set $auth_ok 1;
-        }
-        if ($auth_ok = 0) {
-            add_header WWW-Authenticate 'Bearer resource_metadata="https://$host/.well-known/oauth-protected-resource"' always;
-            return 401;
-        }
+        auth_request /_auth;
+        error_page 401 = @unauthorized;
 
         proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
@@ -43,5 +40,18 @@ server {
         proxy_set_header Connection "";
         proxy_buffering off;
         proxy_read_timeout 3600s;
+    }
+
+    location = /_auth {
+        internal;
+        proxy_pass http://127.0.0.1:8001/_auth;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header Authorization $http_authorization;
+    }
+
+    location @unauthorized {
+        add_header WWW-Authenticate 'Bearer resource_metadata="https://$host/.well-known/oauth-protected-resource"' always;
+        return 401;
     }
 }

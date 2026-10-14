@@ -1,4 +1,9 @@
-FROM python:3.12-slim
+# Base image and upstream server pinned so a rebuild never pulls unreviewed code:
+# this container holds a full Garmin Connect session. Dependabot bumps the digest.
+FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+
+# Taxuspt/garmin_mcp commit, reviewed before each bump.
+ARG GARMIN_MCP_REF=30324f70ccb50c2570126501df17acf0b5572083
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
@@ -9,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /etc/nginx/sites-enabled/default
 
-RUN pip install --no-cache-dir "git+https://github.com/Taxuspt/garmin_mcp"
+RUN pip install --no-cache-dir "git+https://github.com/Taxuspt/garmin_mcp@${GARMIN_MCP_REF}"
 
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
