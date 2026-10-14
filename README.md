@@ -56,7 +56,7 @@ exposed.
 Requires Docker + Docker Compose.
 
 ```bash
-git clone <this-repo-url>
+git clone https://github.com/gabrielkpo/garmin-mcp-remote.git
 cd garmin-mcp-remote
 cp .env.example .env
 ```
@@ -185,7 +185,7 @@ directly from this repo's `Dockerfile` and inject a `PORT` env var that the
 container already respects. Set `MCP_BEARER_TOKEN`, `GARMIN_EMAIL`,
 `GARMIN_PASSWORD` as secrets/environment variables in the platform's
 dashboard, and attach a **persistent volume** mounted at
-`/root/.garminconnect` (all three support this) so cached auth tokens
+`/data/garminconnect` (all three support this) so cached auth tokens
 survive redeploys.
 
 The one wrinkle: the initial `garmin-mcp-auth` MFA step is interactive, and

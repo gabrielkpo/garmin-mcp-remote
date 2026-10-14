@@ -7,7 +7,7 @@ services:
       # so the bearer never crosses the LAN in clear HTTP.
       - "127.0.0.1:${PORT:-8080}:${PORT:-8080}"
     volumes:
-      - garmin-tokens:/root/.garminconnect
+      - garmin-tokens:/data/garminconnect
     restart: unless-stopped
 
 volumes:
