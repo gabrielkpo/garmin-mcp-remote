@@ -20,16 +20,13 @@ server {
     # The upstream garmin-mcp process only listens on 127.0.0.1 inside this
     # container, so it is never reachable except through this check.
     #
-    # Accepted two ways: "Authorization: Bearer <token>" header (what the
-    # OAuth token endpoint above hands out, and what claude.ai will send
-    # after completing the OAuth flow), or a "?token=<token>" query param
-    # for manual/non-OAuth clients.
+    # Accepted only as an "Authorization: Bearer <token>" header (what the
+    # OAuth token endpoint above hands out after a successful consent, and what
+    # claude.ai sends afterwards). A "?token=" query parameter is deliberately
+    # NOT accepted: it would end up in access logs and Referer headers.
     location / {
         set $auth_ok 0;
         if ($http_authorization = "Bearer ${MCP_BEARER_TOKEN}") {
-            set $auth_ok 1;
-        }
-        if ($arg_token = "${MCP_BEARER_TOKEN}") {
             set $auth_ok 1;
         }
         if ($auth_ok = 0) {
