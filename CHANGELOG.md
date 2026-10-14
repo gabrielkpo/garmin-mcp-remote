@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/gabrielkpo/garmin-mcp-remote/compare/v0.1.2...v0.1.3) (2026-10-14)
+
+
+### Bug Fixes
+
+* **docker:** run as a non-root user ([#26](https://github.com/gabrielkpo/garmin-mcp-remote/issues/26)) ([37edfbf](https://github.com/gabrielkpo/garmin-mcp-remote/commit/37edfbf56242498ac24a4160a24fb81db48bb761))
+* supply-chain and auth hardening ([#23](https://github.com/gabrielkpo/garmin-mcp-remote/issues/23)) ([e328de1](https://github.com/gabrielkpo/garmin-mcp-remote/commit/e328de1928a47fe191e2f8f5b620b4ef19402fc8))
+
 ## [0.1.2](https://github.com/gabrielkpo/garmin-mcp-remote/compare/v0.1.1...v0.1.2) (2026-10-14)
 
 
