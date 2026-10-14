@@ -3,7 +3,9 @@ services:
     build: .
     env_file: .env
     ports:
-      - "${PORT:-8080}:${PORT:-8080}"
+      # Loopback only: the public entry is the tunnel (ngrok) or a TLS reverse proxy,
+      # so the bearer never crosses the LAN in clear HTTP.
+      - "127.0.0.1:${PORT:-8080}:${PORT:-8080}"
     volumes:
       - garmin-tokens:/root/.garminconnect
     restart: unless-stopped
