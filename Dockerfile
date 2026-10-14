@@ -14,8 +14,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /etc/nginx/sites-enabled/default
 
+# The MCP server, the OAuth shim and the nginx workers run as an unprivileged user.
+# Root only renders the nginx config, fixes the token volume ownership and supervises.
+RUN useradd --system --uid 10001 --create-home --home-dir /home/app app \
+    && mkdir -p /data/garminconnect \
+    && chown app:app /data/garminconnect
+
 RUN pip install --no-cache-dir "git+https://github.com/Taxuspt/garmin_mcp@${GARMIN_MCP_REF}"
 
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY oauth_shim.py /oauth_shim.py
@@ -23,6 +30,8 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENV GARMIN_MCP_TRANSPORT=streamable-http \
+    GARMINTOKENS=/data/garminconnect \
+    HOME=/home/app \
     GARMIN_MCP_HOST=127.0.0.1 \
     GARMIN_MCP_PORT=8000 \
     PORT=8080
