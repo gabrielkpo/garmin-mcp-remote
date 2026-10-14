@@ -25,10 +25,12 @@ One container runs three processes (via supervisord):
 - `oauth-shim` — a tiny OAuth 2.1 authorization server bound to
   `127.0.0.1:8001`, implementing just enough of the spec (discovery, Dynamic
   Client Registration, Authorization Code + PKCE, token exchange) for
-  claude.ai and similar clients to connect. It always hands out the same
-  static `MCP_BEARER_TOKEN` as the "access token" — this is a
-  protocol-compliance shim in front of a single-user static-token model, not
-  a real multi-tenant auth backend. See [Security notes](#security-notes).
+  claude.ai and similar clients to connect. It only releases the static
+  `MCP_BEARER_TOKEN` (as the "access token") to a caller who typed the
+  separate `MCP_CONSENT_SECRET` on the consent page, or who presents a refresh
+  token it signed itself — this is a protocol-compliance shim in front of a
+  single-user static-token model, not a real multi-tenant auth backend. See
+  [Security notes](#security-notes).
 - `nginx` — listens on the public port. Routes OAuth discovery/register/
   authorize/token paths to `oauth-shim`, proxies `/healthz` unauthenticated
   (for platform/uptime health checks), and proxies everything else —
@@ -64,6 +66,12 @@ Edit `.env`:
 - Generate a bearer token and put it in `MCP_BEARER_TOKEN`:
   ```bash
   openssl rand -hex 32
+  ```
+- Generate a **different** secret for `MCP_CONSENT_SECRET` (the container
+  refuses to start without it, and refuses a value equal to the bearer token).
+  You type it once on the consent page when connecting a client:
+  ```bash
+  openssl rand -hex 24
   ```
 
 **One-time authentication (handles MFA):**
@@ -202,35 +210,42 @@ Add a **custom connector** in claude.ai's connector settings:
 - Leave the OAuth Client ID / Secret fields blank.
 
 claude.ai will automatically discover the OAuth endpoints, register itself
-as a client, and open a one-click "Autoriser" consent page — approve it once
-and the connector is live. You should not need to touch the connector again
+as a client, and open a consent page. Type your `MCP_CONSENT_SECRET` and
+approve it once and the connector is live. You should not need to touch the connector again
 after that, as long as the URL stays the same (which it will, with a static
 ngrok domain or a cloud platform's assigned hostname).
 
 If you're wiring up a client that doesn't support OAuth discovery, the
-bearer token also works directly:
-- Header: `Authorization: Bearer <your MCP_BEARER_TOKEN>`, or
-- Query param: `https://<your-public-host>/mcp?token=<your MCP_BEARER_TOKEN>`
+bearer token also works directly, as a header only:
+- `Authorization: Bearer <your MCP_BEARER_TOKEN>`
+
+A `?token=` query parameter is **not** accepted: it would end up in access
+logs and `Referer` headers.
 
 ## Security notes
 
-- **The bearer token is the only thing standing between the internet and
-  full read/write access to your Garmin account** (sleep, HR, weight,
-  activity GPS tracks, etc.). Treat it like a password: long, random, never
-  committed to git, rotated if you suspect it leaked.
-- To revoke access, change `MCP_BEARER_TOKEN` and redeploy — old tokens (and
-  anything issued by the OAuth shim, since it always wraps the same token)
-  stop working immediately.
-- The OAuth shim's `/authorize` endpoint has **no real user session or
-  identity check** — it shows a one-click consent page to whoever loads the
-  URL, with no gate beyond knowing the server's address. That's an
-  acceptable tradeoff for a single-user deployment behind a private,
-  unguessable URL, but this is not a general-purpose multi-tenant OAuth
-  server and must never be advertised as one.
+- **The bearer token gives full read/write access to your Garmin account**
+  (sleep, HR, weight, activity GPS tracks, etc.). Treat it like a password:
+  long, random, never committed to git, rotated if you suspect it leaked.
+- **The token is only released after a consent step.** `/authorize` requires
+  `MCP_CONSENT_SECRET` (a value distinct from the bearer token, compared in
+  constant time and rate-limited), and `/token` only accepts an authorization
+  code bound to a PKCE verifier or a refresh token signed with that secret.
+  Knowing the server's URL is no longer enough to obtain the token.
+- **Redirect URIs are allowlisted.** Only `https://claude.ai/api/mcp/auth_callback`
+  by default; add others with `OAUTH_ALLOWED_REDIRECT_URIS` (comma-separated,
+  exact match). The shim is built for one user and one client family.
+- **Revoking access:** change `MCP_CONSENT_SECRET` to invalidate every refresh
+  token, and change `MCP_BEARER_TOKEN` to invalidate every issued access
+  token, then redeploy. Do both if you suspect a leak.
+- **If you ran a version before 0.1.2**, an unauthenticated request to
+  `/token` returned the bearer token. Treat any instance that was reachable
+  from the internet as compromised: rotate both secrets and check your Garmin
+  account activity.
 - Always run this behind HTTPS in production. Plain HTTP bearer auth over
   the open internet is trivially sniffable.
 - `.env` is gitignored on purpose. Never commit real credentials, the
-  bearer token, or any tunnel provider authtoken.
+  bearer token, the consent secret, or any tunnel provider authtoken.
 - This repo does not store your Garmin password anywhere persistent — it's
   only used transiently for the initial `garmin-mcp-auth` handshake, which
   produces OAuth tokens that are what actually get cached.
@@ -238,7 +253,8 @@ bearer token also works directly:
 ## Development
 
 The OAuth shim is covered by unit tests (discovery, dynamic client registration,
-PKCE code flow, single-use codes). CI runs lint, tests and a Docker build on
+consent and redirect allowlist, PKCE code flow, single-use codes, refresh-token
+signing and expiry, fail-closed startup). CI runs lint, tests and a Docker build on
 every pull request.
 
 ```bash

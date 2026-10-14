@@ -9,6 +9,7 @@ if [ "$#" -gt 0 ]; then
 fi
 
 : "${MCP_BEARER_TOKEN:?MCP_BEARER_TOKEN must be set — generate one with: openssl rand -hex 32}"
+: "${MCP_CONSENT_SECRET:?MCP_CONSENT_SECRET must be set (and differ from MCP_BEARER_TOKEN) — generate one with: openssl rand -hex 24}"
 # GARMIN_EMAIL / GARMIN_PASSWORD are only required for the one-time `garmin-mcp-auth`
 # step (see README). Once OAuth tokens are cached in the garmin-tokens volume, the
 # server runs fine without them.
