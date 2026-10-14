@@ -241,10 +241,6 @@ logs and `Referer` headers.
 - **Revoking access:** change `MCP_CONSENT_SECRET` to invalidate every refresh
   token, and change `MCP_BEARER_TOKEN` to invalidate every issued access
   token, then redeploy. Do both if you suspect a leak.
-- **If you ran a version before 0.1.2**, an unauthenticated request to
-  `/token` returned the bearer token. Treat any instance that was reachable
-  from the internet as compromised: rotate both secrets and check your Garmin
-  account activity.
 - Always run this behind HTTPS in production. Plain HTTP bearer auth over
   the open internet is trivially sniffable.
 - `.env` is gitignored on purpose. Never commit real credentials, the
