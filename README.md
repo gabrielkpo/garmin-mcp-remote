@@ -87,6 +87,9 @@ rate-limited responses from Garmin's login endpoints during this step are
 normal and usually resolve on their own within minutes to an hour — this
 script makes a single attempt and stops, it will not hammer Garmin's servers.)
 
+**Then delete `GARMIN_PASSWORD` from `.env`.** The server only needs the cached
+tokens; keeping the password would inject it into the container at every start.
+
 **Start the server:**
 
 ```bash
@@ -246,9 +249,17 @@ logs and `Referer` headers.
   the open internet is trivially sniffable.
 - `.env` is gitignored on purpose. Never commit real credentials, the
   bearer token, the consent secret, or any tunnel provider authtoken.
-- This repo does not store your Garmin password anywhere persistent — it's
-  only used transiently for the initial `garmin-mcp-auth` handshake, which
-  produces OAuth tokens that are what actually get cached.
+- Your Garmin password is only needed for the initial `garmin-mcp-auth`
+  handshake, which produces the OAuth tokens that actually get cached. Remove it
+  from `.env` once that step succeeds.
+- `docker compose` publishes the port on `127.0.0.1` only: the public entry is the
+  tunnel or a TLS reverse proxy, never the LAN. The bearer check runs in the shim
+  (constant-time comparison), so the token is not written into the nginx config.
+- On a host where the Host header is not fixed by a tunnel, set `PUBLIC_BASE_URL`
+  so the OAuth metadata never echoes a client-supplied host.
+- Supply chain: the base image is pinned by digest, the upstream `garmin_mcp`
+  server by commit (`GARMIN_MCP_REF` in the Dockerfile), and every GitHub Action
+  by commit SHA. Review the upstream diff before bumping `GARMIN_MCP_REF`.
 
 ## Development
 
